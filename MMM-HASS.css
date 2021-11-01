@@ -7,10 +7,6 @@
   text-align: right;
 }
 
-.MMM-HASS .module-content .flex-item {
-  /*margin: auto;*/
-}
-
 .region.left .MMM-HASS .row,
 .region.center .MMM-HASS .row,
 .region.right .MMM-HASS .row {

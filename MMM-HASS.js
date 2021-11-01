@@ -14,9 +14,12 @@ Module.register('MMM-HASS', {
   defaults: {
     host: 'localhost',
     port: '8083',
+    https: false,
     initialLoadDelay: 1000,
     updateInterval: 60 * 1000, // every 60 seconds
     hassiotoken: false, // True: OAuth bearer token for API is in environment variable HASSIO_TOKEN (useful when running as a hassio add-on)
+    token: '',
+    debuglogging: false,
   },
 
   // Define required scripts.
@@ -37,6 +40,10 @@ Module.register('MMM-HASS', {
   socketNotificationReceived: function(notification, payload) {
     if (notification === 'DATARECEIVED') {
       this.hassData = payload;
+      if(this.config.debuglogging) {
+        console.log(this.hassData)
+      }
+
       this.loaded = true;
       this.updateDom(2000);
     }
@@ -92,7 +99,6 @@ Module.register('MMM-HASS', {
       loading.innerHTML = this.translate("LOADING");
       container.appendChild(loading);
     } else {
-
       for(var index = 0, numDevices = self.config.devices.length; index<numDevices; index++) {
         var device   = self.config.devices[index];
         var hassData = this.hassData[device.deviceLabel];
@@ -109,46 +115,42 @@ Module.register('MMM-HASS', {
         // add readings but do not rely on order from requests
         for(var indexValue=0, numReadings=device.deviceReadings.length; indexValue<numReadings; indexValue++) {
 
-		  var value = hassData[self.config.devices[index].deviceReadings[indexValue].sensor];
+          var value = hassData[self.config.devices[index].deviceReadings[indexValue].sensor];
 
-		  if (typeof value == "number") {
-		    value = parseFloat(value)
-		      .toFixed(1);
-		  }
+          if (typeof value == "number") {
+            value = parseFloat(value)
+              .toFixed(1);
+          }
 
-		  var valueWrapper = document.createElement('span');
+          var valueWrapper = document.createElement('span');
 
-		  //add icon
-		  if (self.config.devices[index].deviceReadings[indexValue].icon) {
-		    valueWrapper.innerHTML = '<i class="dimmed ' + self.config.devices[index].deviceReadings[indexValue].icon + '"></i>';
-		  }
+          //add icon
+          if (self.config.devices[index].deviceReadings[indexValue].icon) {
+            valueWrapper.innerHTML = '<i class="dimmed ' + self.config.devices[index].deviceReadings[indexValue].icon + '"></i>';
+          }
 
-		  // add prefix
-		  if (self.config.devices[index].deviceReadings[indexValue].prefix) {
-		    valueWrapper.innerHTML += self.config.devices[index].deviceReadings[indexValue].prefix;
-		  }
+          // add prefix
+          if (self.config.devices[index].deviceReadings[indexValue].prefix) {
+            valueWrapper.innerHTML += self.config.devices[index].deviceReadings[indexValue].prefix;
+          }
 
-		  valueWrapper.innerHTML += value;
+          valueWrapper.innerHTML += value;
 
-		  // add suffix
-		  if (self.config.devices[index].deviceReadings[indexValue].suffix) {
-		    valueWrapper.innerHTML += self.config.devices[index].deviceReadings[indexValue].suffix;
-		  }
+          // add suffix
+          if (self.config.devices[index].deviceReadings[indexValue].suffix) {
+            valueWrapper.innerHTML += self.config.devices[index].deviceReadings[indexValue].suffix;
+          }
 
-		  if (self.config.devices[index].deviceReadings[indexValue].notification) {
-		    self.sendNotification(self.config.devices[index].deviceReadings[indexValue].notification, value);
-		  }
+          if (self.config.devices[index].deviceReadings[indexValue].notification) {
+            self.sendNotification(self.config.devices[index].deviceReadings[indexValue].notification, value);
+          }
 
-		  valueWrapper.className = 'value medium bright';
-		  deviceWrapper.appendChild(valueWrapper);
-		}
-
-		container.appendChild(deviceWrapper);
-	      }
-
+          valueWrapper.className = 'value medium bright';
+          deviceWrapper.appendChild(valueWrapper);
+		    }
+		    container.appendChild(deviceWrapper);
 	    }
-
-	    return container;
-	  }
-
-	});
+    }
+    return container;
+  }
+});

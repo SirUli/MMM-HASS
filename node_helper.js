@@ -32,15 +32,17 @@ module.exports = NodeHelper.create({
       url = url + '?api_password=' + config.apipassword;
     }
 
+    if (config.https) {
+      url = 'https://' + url;
+    } else {
+      url = 'http://' + url;
+    }
+
     if(config.debuglogging) {
       console.log(url);
     }
 
-    if (config.https) {
-      return 'https://' + url;
-    } else {
-      return 'http://' + url;
-    }
+    return url
   },
 
   buildHassEventUrl: function(domain, service, config) {
@@ -57,43 +59,17 @@ module.exports = NodeHelper.create({
       url = url + '?api_password=' + config.apipassword;
     }
 
+    if (config.https) {
+      url = 'https://' + url;
+    } else {
+      url = 'http://' + url;
+    }
+
     if(config.debuglogging) {
       console.log(url);
     }
 
-    if (config.https) {
-      return 'https://' + url;
-    } else {
-      return 'http://' + url;
-    }
-  },
-
-  /**
-   * use fhem alias as label if it is set
-   * @param  {object} device fhem device object
-   * @return {string}
-   */
-  getDeviceName: function(attributes) {
-    if (attributes.friendly_name) {
-      return attributes.friendly_name;
-    } else {
-      return attributes.entity_id;
-    }
-  },
-
-  getReadingsValue: function(readingsName, attributes) {
-    var values = [];
-
-    readingsName.forEach(function(element, index, array) {
-      var readingName = element;
-      if (attributes[readingName]) {
-        values.push(attributes[readingName]);
-      } else {
-        values.push('Reading does not exist');
-      }
-    });
-
-    return values;
+    return url
   },
 
   parseJson: function(index, json) {
@@ -126,8 +102,13 @@ module.exports = NodeHelper.create({
       method: 'POST',
       json: params
     };
+
     if(config.hassiotoken) {
-      post_options.headers = { 'Authorization' : 'Bearer ' + config.token };
+      if(config.token) {
+        post_options.headers = { 'Authorization' : 'Bearer ' + config.token };
+      } else {
+        post_options.headers = { 'Authorization' : 'Bearer ' + process.env.HASSIO_TOKEN };
+      }
     }
 
     var post_req = request(post_options, function(error, response, body) {
@@ -140,7 +121,9 @@ module.exports = NodeHelper.create({
   getHassReadings: function(config, callback) {
     var self = this;
 
-    //console.log(config.devices);
+    if(config.debuglogging) {
+      console.log(config.devices);
+    }
 
     var structuredData = _.each(config.devices, function(device) {
       var outDevice = {};
@@ -160,7 +143,9 @@ module.exports = NodeHelper.create({
         urls.push(url);
       });
 
-      //console.log(urls);
+      if(config.debuglogging) {
+        console.log(urls);
+      }
 
       var completed_requests = 0;
 
@@ -173,8 +158,13 @@ module.exports = NodeHelper.create({
           json: true
         };
         if(config.hassiotoken) {
-          get_options.headers = { 'Authorization' : 'Bearer ' + config.token };
+          if(config.token) {
+            get_options.headers = { 'Authorization' : 'Bearer ' + config.token };
+          } else {
+            get_options.headers = { 'Authorization' : 'Bearer ' + process.env.HASSIO_TOKEN
+          }
         }
+
         request(get_options, function(error, response, body) {
           completed_requests++;
           if(config.debuglogging) {
@@ -186,7 +176,9 @@ module.exports = NodeHelper.create({
             // All requests done for the device, process responses array
             // to retrieve all the states
             outDevice.label = device.deviceLabel;
-            console.log(outDevice);
+            if(config.debuglogging) {
+              console.log(outDevice);
+            }
             callback(outDevice);
           }
         });
@@ -221,5 +213,4 @@ module.exports = NodeHelper.create({
       });
     }
   }
-
 });
