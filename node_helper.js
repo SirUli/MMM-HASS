@@ -18,18 +18,17 @@ module.exports = NodeHelper.create({
     this.config = {};
   },
 
-  buildHassUrl: function(devicename, config) {
-
+  buildHassUrl: function(config, urlpath) {
     var url = config.host;
 
     if (config.port) {
-      url = url + ':' + config.port;
+      url += ':' + config.port;
     }
 
-    url = url + '/api/states/' + devicename;
+    url += urlpath;
 
     if (config.apipassword) {
-      url = url + '?api_password=' + config.apipassword;
+      url = '?api_password=' + config.apipassword;
     }
 
     if (config.https) {
@@ -38,58 +37,35 @@ module.exports = NodeHelper.create({
       url = 'http://' + url;
     }
 
-    if(config.debuglogging) {
-      console.log(url);
-    }
+    clogger(url);
 
     return url
+  },
+
+  buildHassDeviceUrl: function(devicename, config) {
+    urlpath = '/api/states/' + devicename
+    return self.buildHassUrl(config, urlpath);
   },
 
   buildHassEventUrl: function(domain, service, config) {
-
-    var url = config.host;
-
-    if (config.port) {
-      url = url + ':' + config.port;
-    }
-
-    url = url + '/api/services/' + domain + '/' + service;
-
-    if (config.apipassword) {
-      url = url + '?api_password=' + config.apipassword;
-    }
-
-    if (config.https) {
-      url = 'https://' + url;
-    } else {
-      url = 'http://' + url;
-    }
-
-    if(config.debuglogging) {
-      console.log(url);
-    }
-
-    return url
+    urlpath = '/api/services/' + domain + '/' + service;
+    return self.buildHassUrl(config, urlpath);
   },
 
-  parseJson: function(index, json) {
-    var self = this;
-
-    if(config.debuglogging) {
-      console.log(json.attributes);
+  buildHassAuthorizationHeader: function(config) {
+    if(config.hassiotoken) {
+      if(config.token) {
+        return { 'Authorization' : 'Bearer ' + config.token };
+      } else {
+        return { 'Authorization' : 'Bearer ' + process.env.HASSIO_TOKEN };
+      }
     }
+  },
 
-    var device = {};
-    // save value of property 'sensor' an array
-    var readings = _.pluck(self.config.devices[index].deviceReadings, function(element, index, list) {
-      return
-    });
-
-    //console.log(readingsName);
-    device.name = config.devices[index].deviceLabel;
-    device.values = readings;
-
-    return device;
+  clogger: function(logentry) {
+    if(config.debuglogging) {
+      console.log(logentry);
+    }
   },
 
   sendHassEvent: function(config, domain, service, params) {
@@ -103,34 +79,21 @@ module.exports = NodeHelper.create({
       json: params
     };
 
-    if(config.hassiotoken) {
-      if(config.token) {
-        post_options.headers = { 'Authorization' : 'Bearer ' + config.token };
-      } else {
-        post_options.headers = { 'Authorization' : 'Bearer ' + process.env.HASSIO_TOKEN };
-      }
-    }
+    post_options.headers = buildHassAuthorizationHeader(config);
 
     var post_req = request(post_options, function(error, response, body) {
-      if(config.debuglogging) {
-        console.log('Response: ' + response.statusCode);
-      }
+      clogger('Response: ' + response.statusCode);
     });
   },
 
   getHassReadings: function(config, callback) {
     var self = this;
-
-    if(config.debuglogging) {
-      console.log(config.devices);
-    }
+    clogger(config.devices);
 
     var structuredData = _.each(config.devices, function(device) {
       var outDevice = {};
 
-      if(config.debuglogging) {
-        console.log(device);
-      }
+      clogger(device);
 
       var readings = device.deviceReadings;
       var urls = [];
@@ -138,14 +101,12 @@ module.exports = NodeHelper.create({
       // First, build a list of url for all the readings
       //
       readings.forEach(function(element, index, array) {
-        var url = self.buildHassUrl(element.sensor, config);
-        console.log('Request URL: ' + url);
+        var url = self.buildHassDeviceUrl(element.sensor, config);
+        clogger('Request URL: ' + url);
         urls.push(url);
       });
 
-      if(config.debuglogging) {
-        console.log(urls);
-      }
+      clogger(urls);
 
       var completed_requests = 0;
 
@@ -157,28 +118,19 @@ module.exports = NodeHelper.create({
           url: urls[i],
           json: true
         };
-        if(config.hassiotoken) {
-          if(config.token) {
-            get_options.headers = { 'Authorization' : 'Bearer ' + config.token };
-          } else {
-            get_options.headers = { 'Authorization' : 'Bearer ' + process.env.HASSIO_TOKEN };
-          }
-        }
+        
+        get_options.headers = buildHassAuthorizationHeader(config);
 
         request(get_options, function(error, response, body) {
           completed_requests++;
-          if(config.debuglogging) {
-            console.log(error);
-            console.log(body);
-          }
+          clogger(error);
+          clogger(body);
           outDevice[body.entity_id] = body.state;
           if (completed_requests == urls.length) {
             // All requests done for the device, process responses array
             // to retrieve all the states
             outDevice.label = device.deviceLabel;
-            if(config.debuglogging) {
-              console.log(outDevice);
-            }
+            clogger(outDevice);
             callback(outDevice);
           }
         });
