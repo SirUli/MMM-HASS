@@ -161,7 +161,7 @@ module.exports = NodeHelper.create({
           if(config.token) {
             get_options.headers = { 'Authorization' : 'Bearer ' + config.token };
           } else {
-            get_options.headers = { 'Authorization' : 'Bearer ' + process.env.HASSIO_TOKEN
+            get_options.headers = { 'Authorization' : 'Bearer ' + process.env.HASSIO_TOKEN };
           }
         }
 
