@@ -45,13 +45,13 @@ module.exports = NodeHelper.create({
 
   buildHassDeviceUrl: function(devicename, config) {
     var self = this;
-    urlpath = '/api/states/' + devicename
+    var urlpath = '/api/states/' + devicename
     return self.buildHassUrl(config, urlpath);
   },
 
   buildHassEventUrl: function(domain, service, config) {
     var self = this;
-    urlpath = '/api/services/' + domain + '/' + service;
+    var urlpath = '/api/services/' + domain + '/' + service;
     return self.buildHassUrl(config, urlpath);
   },
 
