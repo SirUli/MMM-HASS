@@ -82,7 +82,7 @@ module.exports = NodeHelper.create({
       json: params
     };
 
-    post_options.headers = buildHassAuthorizationHeader(config);
+    post_options.headers = self.buildHassAuthorizationHeader(config);
 
     var post_req = request(post_options, function(error, response, body) {
       self.clogger('Response: ' + response.statusCode);
@@ -122,7 +122,7 @@ module.exports = NodeHelper.create({
           json: true
         };
         
-        get_options.headers = buildHassAuthorizationHeader(config);
+        get_options.headers = self.buildHassAuthorizationHeader(config);
 
         request(get_options, function(error, response, body) {
           completed_requests++;
