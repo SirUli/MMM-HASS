@@ -19,6 +19,7 @@ module.exports = NodeHelper.create({
   },
 
   buildHassUrl: function(config, urlpath) {
+    var self = this;
     var url = config.host;
 
     if (config.port) {
@@ -37,17 +38,19 @@ module.exports = NodeHelper.create({
       url = 'http://' + url;
     }
 
-    clogger(url);
+    self.clogger(url);
 
     return url
   },
 
   buildHassDeviceUrl: function(devicename, config) {
+    var self = this;
     urlpath = '/api/states/' + devicename
     return self.buildHassUrl(config, urlpath);
   },
 
   buildHassEventUrl: function(domain, service, config) {
+    var self = this;
     urlpath = '/api/services/' + domain + '/' + service;
     return self.buildHassUrl(config, urlpath);
   },
@@ -82,18 +85,18 @@ module.exports = NodeHelper.create({
     post_options.headers = buildHassAuthorizationHeader(config);
 
     var post_req = request(post_options, function(error, response, body) {
-      clogger('Response: ' + response.statusCode);
+      self.clogger('Response: ' + response.statusCode);
     });
   },
 
   getHassReadings: function(config, callback) {
     var self = this;
-    clogger(config.devices);
+    self.clogger(config.devices);
 
     var structuredData = _.each(config.devices, function(device) {
       var outDevice = {};
 
-      clogger(device);
+      self.clogger(device);
 
       var readings = device.deviceReadings;
       var urls = [];
@@ -102,11 +105,11 @@ module.exports = NodeHelper.create({
       //
       readings.forEach(function(element, index, array) {
         var url = self.buildHassDeviceUrl(element.sensor, config);
-        clogger('Request URL: ' + url);
+        self.clogger('Request URL: ' + url);
         urls.push(url);
       });
 
-      clogger(urls);
+      self.clogger(urls);
 
       var completed_requests = 0;
 
@@ -123,14 +126,14 @@ module.exports = NodeHelper.create({
 
         request(get_options, function(error, response, body) {
           completed_requests++;
-          clogger(error);
-          clogger(body);
+          self.clogger(error);
+          self.clogger(body);
           outDevice[body.entity_id] = body.state;
           if (completed_requests == urls.length) {
             // All requests done for the device, process responses array
             // to retrieve all the states
             outDevice.label = device.deviceLabel;
-            clogger(outDevice);
+            self.clogger(outDevice);
             callback(outDevice);
           }
         });
